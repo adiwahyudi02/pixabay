@@ -13,6 +13,7 @@ module.exports = {
     "!**/.eslintrc.js",
     "!**/constants/**",
     "!**/scripts/**",
-    "!**/api/**",
+    "!**/types/**",
+    "!**/backend/**",
   ],
 };
