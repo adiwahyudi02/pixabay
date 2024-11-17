@@ -1,3 +1,4 @@
+import axios from "axios";
 import { getData, removeData, storeData } from "@/utils/storage";
 import { createSlice } from "@reduxjs/toolkit";
 import { AppDispatch, RootState } from "..";
@@ -38,23 +39,32 @@ const baseUrl =
 export const authenticateUser =
   (username: string, password: string) => async (dispatch: AppDispatch) => {
     try {
-      const response = await fetch(`${baseUrl}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+      const response = await axios.post(`${baseUrl}/login`, {
+        username,
+        password,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (response.status === 200) {
+        const data = response.data;
         // If successful, store the key and update state
         await storeData(STORAGE_KEY.PIXABAY_KEY, data.key);
         dispatch(setAuthentication({ isAuthenticated: true, key: data.key }));
       } else {
-        throw new Error(data.message || "Login failed. Please try again.");
+        throw new Error(
+          response.data.message || "Login failed. Please try again."
+        );
       }
     } catch (error: any) {
-      throw new Error(error.message || "An unknown error occurred");
+      // Specifically handling network errors
+      if (error.response) {
+        throw new Error(
+          error.response?.data?.message || "An unknown error occurred"
+        );
+      } else if (error.request) {
+        throw new Error("Network error");
+      } else {
+        throw new Error(error.message || "An unknown error occurred");
+      }
     }
   };
 

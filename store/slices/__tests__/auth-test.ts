@@ -8,6 +8,7 @@ import authReducer, {
 import { getData, storeData, removeData } from "@/utils/storage";
 import { STORAGE_KEY } from "@/constants/storageKey";
 import { RootState } from "@/store";
+import axios from "axios";
 
 jest.mock("@/utils/storage", () => ({
   storeData: jest.fn(),
@@ -15,7 +16,7 @@ jest.mock("@/utils/storage", () => ({
   removeData: jest.fn(),
 }));
 
-global.fetch = jest.fn();
+jest.mock("axios");
 
 const mockKey = "mock_pixabay_key";
 
@@ -55,9 +56,9 @@ describe("auth slice and async actions", () => {
 
   it("should authenticate user and store key", async () => {
     const mockResponse = { key: mockKey };
-    (fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockResponse,
+    (axios.post as jest.Mock).mockResolvedValueOnce({
+      data: mockResponse,
+      status: 200,
     });
 
     await store.dispatch(authenticateUser("username", "password") as any);
@@ -69,9 +70,11 @@ describe("auth slice and async actions", () => {
   });
 
   it("should handle failed authentication", async () => {
-    (fetch as jest.Mock).mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({ message: "Invalid credentials" }),
+    const mockErrorResponse = { message: "Invalid credentials" };
+    (axios.post as jest.Mock).mockRejectedValueOnce({
+      response: {
+        data: mockErrorResponse,
+      },
     });
 
     await expect(
@@ -105,7 +108,7 @@ describe("auth slice and async actions", () => {
   });
 
   it("should handle errors in authenticateUser", async () => {
-    (fetch as jest.Mock).mockRejectedValueOnce(new Error("Network error"));
+    (axios.post as jest.Mock).mockRejectedValueOnce(new Error("Network error"));
 
     await expect(
       store.dispatch(authenticateUser("username", "password") as any)
